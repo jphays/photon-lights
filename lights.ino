@@ -1,17 +1,15 @@
-// ===========================================
-// Light patterns for DotStar APA102 strip.
-// Based on FastLED 3.1 demo reel.
-// Josh Hays, 8/2015
-// ===========================================
-
-#include <Button.h>
-#include <FastLED.h>
-FASTLED_USING_NAMESPACE
-
+#pragma SPARK_NO_PREPROCESSOR
+#include "FastLED.h"
+FASTLED_USING_NAMESPACE;
+#include "Button.h"
+#include "math.h"
 #include "settings.h"
 #include "utils.h"
 #include "palettes.h"
 #include "patterns.h"
+
+SYSTEM_THREAD(ENABLED);
+//SYSTEM_MODE(MANUAL);
 
 #if FASTLED_VERSION < 3001000
 #error "Requires FastLED 3.1 or later."
@@ -20,35 +18,33 @@ FASTLED_USING_NAMESPACE
 CRGB leds[NUM_LEDS]; // actual output array
 CRGB buffer[2][NUM_LEDS]; // intermediate buffers
 
-Button gPatternButton(BUTTON1_PIN, true, true, 20);
-Button gPaletteButton(BUTTON2_PIN, true, true, 20);
-
-
-// Initialization
-// --------------
-
-void setup()
-{
-    // tell FastLED about the LED strip configuration
-    FastLED.addLeds<LED_TYPE, DATA_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS);
-    // FastLED.setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(BRIGHTNESS);
-
-    // set up serial
-    Serial.begin(57600);
-}
+//Button gPatternButton(BUTTON1_PIN, true, true, 20);
+//Button gPaletteButton(BUTTON2_PIN, true, true, 20);
+Button gPowerButton(BUTTON_POWER, true, true, 20);
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePattern)(CRGB*, unsigned long);
 SimplePattern gPatterns[] = {
-    paletteSweep,
-    paletteSweepWithGlitter,
+    //paletteSweep,
+    //paletteSweepWithGlitter,
+    alternating,
     distributed,
+    distributedWithGlitter,
     leaderSpread,
+    leaderSpreadWithGlitter,
     confetti,
     juggle,
-    sinelon,
+    //sinelon,
     candle,
+    //pulseTracer,
+    beatPhaser,
+    squares,
+    descent,
+    mirror,
+    hatchflash,
+    //fade,
+    scanner
+    //cubeTest
 };
 
 // List of palettes to use
@@ -56,34 +52,38 @@ CRGBPalette16 gPalettes[] = {
     CRGBPalette16(RainbowColors_p),
     CRGBPalette16(RainbowStripeColors_p),
     CRGBPalette16(PartyColors_p),
-    CRGBPalette16(LavaColors_p),
+    //CRGBPalette16(CloudColors_p),
+    //CRGBPalette16(ForestColors_p),
+    //CRGBPalette16(LavaColors_p),
     CRGBPalette16(OceanColors_p),
     modifiedRainbow_p,
     coldFire_p,
     royal_p,
-    bp_p,
+    //bp_p,
     spring_gp,
     summer_gp,
     autumn_gp,
     winter_gp,
-    hot_gp,
+    //hot_gp,
     cool_gp,
+    //kelvino_p,
+    //achilles_p
 };
 
 // Palette generation functions
 typedef CRGBPalette16 (*PaletteFunction)();
 PaletteFunction gPaletteFuncs[] = {
-    getPulsePalette,
+    //getPulsePalette,
     getPulse2Palette,
     getPulse4Palette,
-    getStrobePalette,
+    //getStrobePalette,
     getStrobe2Palette,
     getRampPalette,
     getCWCBPalette,
 };
 
 // current and next palette, for smooth transitions
-CRGBPalette16 gCurrentPalette(gPalettes[0]); // could init with intro palette, e.g. CRGB::LightGrey
+CRGBPalette16 gCurrentPalette(CRGB::Black); // intro palette, e.g. CRGB::LightGrey
 CRGBPalette16 gTargetPalette(gPalettes[0]);
 
 uint8_t gCurrentPatternNumber = 0; // Index of current pattern
@@ -103,37 +103,47 @@ unsigned long gCurrentTime = 0;
 unsigned long gPreviousTime = 0;
 unsigned long gTransitionTime = 0;
 
+// Transitions -----------------------------------------------------------------
 
-// Main Loop
-// ---------
-
-void loop()
+void nextPattern()
 {
+    gPreviousPatternNumber = gCurrentPatternNumber;
 
-    // update state
-    gFrame++;
-    gSceneFrame[CUR]++;
-    gSceneFrame[PREV]++;
-    gPreviousTime = gCurrentTime;
-    gCurrentTime = millis();
+    gCurrentPatternNumber = gRandomize ?
+        random8Except(ARRAY_SIZE(gPatterns), gCurrentPatternNumber) :
+        (gCurrentPatternNumber + 1) % ARRAY_SIZE(gPatterns);
 
-    // read buttons
-    handleInput();
+    memmove8(&buffer[PREV], &buffer[CUR], NUM_LEDS * sizeof(CRGB));
+    memset(buffer[CUR], 0, sizeof(CRGB));
 
-    // render the current frame to the led buffer, transitioning scenes if necessary
-    renderFrame();
+    gTransitioning = true;
+    gTransitionTime = gCurrentTime;
+    gSceneFrame[PREV] = gSceneFrame[CUR];
+    gSceneFrame[CUR] = 0;
 
-    // send the 'leds' array out to the actual LED strip
-    FastLED.show();
-    // insert a delay to keep the framerate modest
-    FastLED.delay(1000/FRAMES_PER_SECOND);
+    Spark.publish("pattern-change", String(gCurrentPatternNumber));
+}
 
-    // do some periodic updates
-    EVERY_N_MILLISECONDS(20) { gIndex++; } // slowly cycle the "base color" through the palette
-    EVERY_N_MILLISECONDS(20) { nblendPaletteTowardPalette(gCurrentPalette, gTargetPalette); }
-    EVERY_N_SECONDS(15) { if (gCycle) nextPattern(); } // change patterns periodically
-    EVERY_N_SECONDS(30) { if (gCycle) nextPalette(); } // change palettes periodically
+void nextPalette()
+{
+    if (gRandomize)
+    {
+        uint8_t paletteType = random8(100);
+        if (paletteType < 70)
+            gTargetPalette = gPalettes[random8(ARRAY_SIZE(gPalettes))];
+        else
+            gTargetPalette = gPaletteFuncs[random8(ARRAY_SIZE(gPaletteFuncs))]();
+    }
+    else
+    {
+        static uint8_t paletteIndex = 0;
 
+        // pick one:
+        gTargetPalette = gPalettes[paletteIndex++ % ARRAY_SIZE(gPalettes)];
+        //gTargetPalette = gPaletteFuncs[paletteIndex++ % ARRAY_SIZE(gPaletteFuncs)]();
+    }
+
+    Spark.publish("palette-change", paletteToString(gTargetPalette));
 }
 
 void renderFrame()
@@ -166,7 +176,32 @@ void renderFrame()
 
 }
 
-void handleInput()
+// Cloud functions -------------------------------------------------------------
+
+int setHue(String hue)
+{
+    gCycle = false;
+    gTargetPalette = CRGBPalette16(CHSV(hue.toInt(), 255, 255));
+    gCurrentPalette = CRGBPalette16(CHSV(hue.toInt(), 255, 255));
+}
+
+int nextPat(String arg)
+{
+    gCycle = false;
+    gRandomize = false;
+    nextPattern();
+}
+
+int randomize(String arg)
+{
+    gCycle = true;
+    gRandomize = true;
+    nextPalette();
+}
+
+// Input -----------------------------------------------------------------------
+
+/*void handleInput()
 {
     gPatternButton.read();
     gPaletteButton.read();
@@ -192,45 +227,78 @@ void handleInput()
         gRandomize = true;
         gTransitionMillis = 3000;
     }
+}*/
+
+void handleInput()
+{
+    //gPowerButton.read();
+    //if (gPowerButton.pressedFor(100))
+    //{
+    //    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    //    FastLED.show();
+    //    System.sleep(BUTTON_POWER, FALLING);
+    //}
 }
 
+// Initialization --------------------------------------------------------------
 
-// Transitions
-// -----------
-
-void nextPattern()
+void setup()
 {
-    gPreviousPatternNumber = gCurrentPatternNumber;
+    // tell FastLED about the LED strip configuration
+    FastLED.addLeds<LED_TYPE, DATA_PIN>(leds, NUM_LEDS);
+    //FastLED.setCorrection(0xFFA08C);
+    FastLED.setCorrection(TypicalLEDStrip);
+    FastLED.setBrightness(BRIGHTNESS);
 
-    gCurrentPatternNumber = gRandomize ?
-        random8Except(ARRAY_SIZE(gPatterns), gCurrentPatternNumber) :
-        (gCurrentPatternNumber + 1) % ARRAY_SIZE(gPatterns);
+    // set up serial
+    Serial.begin(9600);
+    // take control of photon onboard LED
+    RGBClass::control(true);
 
-    memmove8(&buffer[PREV], &buffer[CUR], NUM_LEDS * sizeof(CRGB));
-    memset(buffer[CUR], 0, sizeof(CRGB));
+    // cloud functions
+    Particle.function("hue", setHue);
+    Particle.function("randomize", randomize);
+    Particle.function("next-pattern", nextPat);
 
-    gTransitioning = true;
-    gTransitionTime = gCurrentTime;
-    gSceneFrame[PREV] = gSceneFrame[CUR];
-    gSceneFrame[CUR] = 0;
-}
+    // randomize
+    random16_add_entropy(analogRead(A0) + analogRead(A1));
 
-void nextPalette()
-{
     if (gRandomize)
     {
-        uint8_t paletteType = random8(100);
-        if (paletteType < 70)
-            gTargetPalette = gPalettes[random8(ARRAY_SIZE(gPalettes))];
-        else
-            gTargetPalette = gPaletteFuncs[random8(ARRAY_SIZE(gPaletteFuncs))]();
+        gTargetPalette = gPalettes[random8(ARRAY_SIZE(gPalettes))];
+        gCurrentPatternNumber = random8(ARRAY_SIZE(gPatterns));
     }
-    else
-    {
-        static uint8_t paletteIndex = 0;
+}
 
-        // pick one:
-        //gTargetPalette = gPalettes[paletteIndex++ % ARRAY_SIZE(gPalettes)];
-        gTargetPalette = gPaletteFuncs[paletteIndex++ % ARRAY_SIZE(gPaletteFuncs)]();
-    }
+// Main Loop -------------------------------------------------------------------
+
+void loop()
+{
+
+    // update state
+    gFrame++;
+    gSceneFrame[CUR]++;
+    gSceneFrame[PREV]++;
+    gPreviousTime = gCurrentTime;
+    gCurrentTime = millis();
+
+    // read buttons
+    handleInput();
+
+    // render the current frame to the led buffer, transitioning scenes if necessary
+    renderFrame();
+
+    // set the onboard RGB led to the first color of the strip
+    RGBClass::color(leds[0].r, leds[0].g, leds[0].b);
+    // send the 'leds' array out to the actual LED strip
+    FastLED.show();
+    // insert a delay to keep the framerate modest
+    FastLED.delay(1000/FRAMES_PER_SECOND);
+
+    // do some periodic updates
+    EVERY_N_MILLISECONDS(20) { gIndex++; } // slowly cycle the "base color" through the palette
+    EVERY_N_MILLISECONDS(20) { nblendPaletteTowardPalette(gCurrentPalette, gTargetPalette); }
+    EVERY_N_SECONDS(20) { if (gCycle) nextPattern(); } // change patterns periodically
+    EVERY_N_SECONDS(17) { if (gCycle) nextPalette(); } // change palettes periodically
+
 }
