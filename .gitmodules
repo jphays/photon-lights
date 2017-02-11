@@ -1,0 +1,6 @@
+[submodule "Button"]
+	path = Button
+	url = https://github.com/JChristensen/Button.git
+[submodule "FastLED"]
+	path = FastLED
+	url = https://github.com/FastLED/FastLED.git
