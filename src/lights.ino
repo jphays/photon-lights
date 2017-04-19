@@ -1,7 +1,7 @@
-#pragma SPARK_NO_PREPROCESSOR
+//#pragma SPARK_NO_PREPROCESSOR
 #include "FastLED.h"
 FASTLED_USING_NAMESPACE;
-#include "Button.h"
+//#include "Button.h"
 #include "math.h"
 #include "settings.h"
 #include "utils.h"
@@ -20,7 +20,7 @@ CRGB buffer[2][NUM_LEDS]; // intermediate buffers
 
 //Button gPatternButton(BUTTON1_PIN, true, true, 20);
 //Button gPaletteButton(BUTTON2_PIN, true, true, 20);
-Button gPowerButton(BUTTON_POWER, true, true, 20);
+//Button gPowerButton(BUTTON_POWER, true, true, 20);
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePattern)(CRGB*, unsigned long);
@@ -245,7 +245,7 @@ void handleInput()
 void setup()
 {
     // tell FastLED about the LED strip configuration
-    FastLED.addLeds<LED_TYPE, DATA_PIN>(leds, NUM_LEDS);
+    FastLED.addLeds<LED_TYPE, DATA_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS);
     //FastLED.setCorrection(0xFFA08C);
     FastLED.setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);
