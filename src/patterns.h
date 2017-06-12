@@ -115,6 +115,18 @@ void confetti(CRGB* pixels, unsigned long frame)
     }
 }
 
+void confetti2(CRGB* pixels, unsigned long frame)
+{
+    // random colored speckles that blink in and fade smoothly.
+    fadeToBlackBy(pixels, NUM_LEDS, beatsin8(8, 4, 12));
+    for (uint8_t i = 0; i < beatsin8(10, 1, 3); i++)
+    {
+        int pos = random16(NUM_LEDS);
+        pixels[pos] += ColorFromPalette(gCurrentPalette, gIndex + random8(beatsin8(6, 20, 160)));
+    }
+    addGlitter(pixels, min(frame / 20, 100));
+}
+
 void juggle(CRGB* pixels, unsigned long frame)
 {
     // colored dots, weaving in and out of sync with each other.
