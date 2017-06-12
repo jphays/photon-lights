@@ -121,29 +121,39 @@ void nextPattern()
     gSceneFrame[PREV] = gSceneFrame[CUR];
     gSceneFrame[CUR] = 0;
 
-    Spark.publish("pattern-change", String(gCurrentPatternNumber));
+    Particle.publish("pattern-change", String(gCurrentPatternNumber));
 }
 
 void nextPalette()
 {
+    bool useFunction;
+    int index;
+
     if (gRandomize)
     {
-        uint8_t paletteType = random8(100);
-        if (paletteType < 70)
-            gTargetPalette = gPalettes[random8(ARRAY_SIZE(gPalettes))];
-        else
-            gTargetPalette = gPaletteFuncs[random8(ARRAY_SIZE(gPaletteFuncs))]();
+        useFunction = random8(100) < 30;
+        index = random8(useFunction ? ARRAY_SIZE(gPaletteFuncs) : ARRAY_SIZE(gPalettes));
     }
     else
     {
+        useFunction = false;
         static uint8_t paletteIndex = 0;
-
-        // pick one:
-        gTargetPalette = gPalettes[paletteIndex++ % ARRAY_SIZE(gPalettes)];
-        //gTargetPalette = gPaletteFuncs[paletteIndex++ % ARRAY_SIZE(gPaletteFuncs)]();
+        index = paletteIndex++ % (useFunction ? ARRAY_SIZE(gPaletteFuncs) : ARRAY_SIZE(gPalettes));
     }
 
-    Spark.publish("palette-change", paletteToString(gTargetPalette));
+    selectPalette(useFunction, index);
+}
+
+void selectPalette(bool useFunction, int index)
+{
+    if (useFunction)
+        gTargetPalette = gPaletteFuncs[index]();
+    else
+        gTargetPalette = gPalettes[index];
+
+    String paletteInfo = useFunction ? "F" : "P";
+    paletteInfo += String(index) + ": " + paletteToString(gTargetPalette);
+    Particle.publish("palette-change", paletteInfo);
 }
 
 void renderFrame()
@@ -183,6 +193,13 @@ int setHue(String hue)
     gCycle = false;
     gTargetPalette = CRGBPalette16(CHSV(hue.toInt(), 255, 255));
     gCurrentPalette = CRGBPalette16(CHSV(hue.toInt(), 255, 255));
+}
+
+int nextPal(String arg)
+{
+  gCycle = false;
+  gRandomize = false;
+  nextPalette();
 }
 
 int nextPat(String arg)
@@ -256,9 +273,10 @@ void setup()
     RGBClass::control(true);
 
     // cloud functions
-    Particle.function("hue", setHue);
-    Particle.function("randomize", randomize);
+    //Particle.function("hue", setHue);
+    Particle.function("next-palette", nextPal);
     Particle.function("next-pattern", nextPat);
+    Particle.function("randomize", randomize);
 
     // randomize
     random16_add_entropy(analogRead(A0) + analogRead(A1));
