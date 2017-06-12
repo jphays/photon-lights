@@ -355,19 +355,48 @@ void scanner(CRGB* pixels, unsigned long frame)
 
 // cube code -------------------------------------------------------------------
 
-uint8_t faceOffset(uint8_t face) { return face * WIDTH * HEIGHT; }
+uint8_t faceOffset(uint8_t face) { return face * WIDTH * WIDTH; }
 uint16_t cubeXY(uint8_t face, uint8_t x, uint8_t y)
 {
     return faceOffset(face) + XY(x, y);
 }
 
-void cubeTest(CRGB* pixels, unsigned long frame)
+void cube1(CRGB* pixels, unsigned long frame)
 {
 
-    for (uint8_t face = 0; face < 4; face++)
+    for (uint8_t face = 0; face < 5; face++)
     {
-        square(pixels + faceOffset(face) * sizeof(CRGB), ColorFromPalette(gCurrentPalette, gIndex + face * 32), 1);
-        square(pixels + faceOffset(face) * sizeof(CRGB), ColorFromPalette(gCurrentPalette, gIndex + face * 32 + 64), 2);
+        for (uint8_t x = 0; x < 4; x++)
+        {
+            for (uint8_t y = 0; y < 4; y++)
+            {
+                pixels[cubeXY(face, x, y)] = ColorFromPalette(gCurrentPalette, gIndex + face * 48);
+            }
+        }
+    }
+
+}
+
+void cube2(CRGB* pixels, unsigned long frame)
+{
+
+    for (uint8_t face = 0; face < 5; face++)
+    {
+        for (uint8_t x = 0; x < 4; x++)
+        {
+            for (uint8_t y = 0; y < 4; y++)
+            {
+                pixels[cubeXY(face, x, y)] = ColorFromPalette(gCurrentPalette, gIndex + face * 48);
+                if ((x == 1 || x == 2) && (y == 1 || y == 2))
+                {
+                    pixels[cubeXY(face, x, y)] += blend(CRGB::Black, CRGB::White, ease8InOutCubic(beatsin8(10, 0, 255)));
+                }
+                else if ((x == 0 || x == 3) && (y == 0 || y == 3))
+                {
+                    pixels[cubeXY(face, x, y)] = blend(ColorFromPalette(gCurrentPalette, gIndex + (face + 2) * 48), ColorFromPalette(gCurrentPalette, gIndex + face * 48), ease8InOutCubic(beatsin8(10, 0, 255)));
+                }
+            }
+        }
     }
 
 }
