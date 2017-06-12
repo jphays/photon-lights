@@ -121,7 +121,10 @@ void nextPattern()
     gSceneFrame[PREV] = gSceneFrame[CUR];
     gSceneFrame[CUR] = 0;
 
-    Particle.publish("pattern-change", String(gCurrentPatternNumber));
+    if (Particle.connected())
+    {
+        Particle.publish("pattern-change", String(gCurrentPatternNumber));
+    }
 }
 
 void nextPalette()
@@ -153,7 +156,11 @@ void selectPalette(bool useFunction, int index)
 
     String paletteInfo = useFunction ? "F" : "P";
     paletteInfo += String(index) + ": " + paletteToString(gTargetPalette);
-    Particle.publish("palette-change", paletteInfo);
+
+    if (Particle.connected())
+    {
+        Particle.publish("palette-change", paletteInfo);
+    }
 }
 
 void renderFrame()
