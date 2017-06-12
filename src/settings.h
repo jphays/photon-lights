@@ -15,7 +15,7 @@
 
 //#define BUTTON1_PIN 5
 //#define BUTTON2_PIN 6
-//#define BUTTON_POWER D0
+#define BUTTON_POWER DAC
 
 #define BRIGHTNESS         96
 #define FRAMES_PER_SECOND  120

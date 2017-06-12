@@ -253,15 +253,25 @@ int randomize(String arg)
     }
 }*/
 
+void setupInput()
+{
+    pinMode(BUTTON_POWER, INPUT_PULLDOWN);
+}
+
 void handleInput()
 {
-    //gPowerButton.read();
-    //if (gPowerButton.pressedFor(100))
-    //{
-    //    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    //    FastLED.show();
-    //    System.sleep(BUTTON_POWER, FALLING);
-    //}
+    if (digitalRead(BUTTON_POWER) == HIGH)
+    {
+        sleep();
+    }
+}
+
+void sleep()
+{
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    FastLED.show();
+    delay(100);
+    System.sleep(SLEEP_MODE_DEEP);
 }
 
 // Initialization --------------------------------------------------------------
@@ -276,6 +286,8 @@ void setup()
 
     // set up serial
     Serial.begin(9600);
+    // set up input
+    setupInput();
     // take control of photon onboard LED
     RGBClass::control(true);
 
