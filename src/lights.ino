@@ -25,26 +25,28 @@ CRGB buffer[2][NUM_LEDS]; // intermediate buffers
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePattern)(CRGB*, unsigned long);
 SimplePattern gPatterns[] = {
-    //paletteSweep,
-    //paletteSweepWithGlitter,
-    alternating,
+    paletteSweep,
+    paletteSweepWithGlitter,
+    //alternating,
     distributed,
     distributedWithGlitter,
-    leaderSpread,
-    leaderSpreadWithGlitter,
+    //leaderSpread,
+    //leaderSpreadWithGlitter,
     confetti,
+    confetti2,
     juggle,
     //sinelon,
-    candle,
+    //candle,
     //pulseTracer,
     beatPhaser,
-    squares,
+    //squares,
     descent,
-    mirror,
-    hatchflash,
+    //mirror,
+    //hatchflash,
     //fade,
-    scanner
-    //cubeTest
+    //scanner,
+    cube1,
+    cube2
 };
 
 // List of palettes to use
@@ -58,7 +60,7 @@ CRGBPalette16 gPalettes[] = {
     CRGBPalette16(OceanColors_p),
     modifiedRainbow_p,
     coldFire_p,
-    royal_p,
+    //royal_p,
     //bp_p,
     spring_gp,
     summer_gp,
@@ -80,11 +82,13 @@ PaletteFunction gPaletteFuncs[] = {
     getStrobe2Palette,
     getRampPalette,
     getCWCBPalette,
+    getEvenPaletteR,
+    getQuadPalette
 };
 
 // current and next palette, for smooth transitions
-CRGBPalette16 gCurrentPalette(CRGB::Black); // intro palette, e.g. CRGB::LightGrey
-CRGBPalette16 gTargetPalette(gPalettes[0]);
+CRGBPalette16 gCurrentPalette(RainbowColors_p); // intro palette, e.g. CRGB::LightGrey
+CRGBPalette16 gTargetPalette(RainbowColors_p);
 
 uint8_t gCurrentPatternNumber = 0; // Index of current pattern
 uint8_t gPreviousPatternNumber = 0; // Index of previous pattern
@@ -279,7 +283,8 @@ void sleep()
 void setup()
 {
     // tell FastLED about the LED strip configuration
-    FastLED.addLeds<LED_TYPE, DATA_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+    //FastLED.addLeds<LED_TYPE, DATA_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS);
+    FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
     //FastLED.setCorrection(0xFFA08C);
     FastLED.setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);

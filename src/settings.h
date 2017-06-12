@@ -5,10 +5,10 @@
 #define CLOCK_PIN   5
 #define LED_TYPE    APA102
 #define COLOR_ORDER EOrder::BGR
-#define NUM_LEDS    64
-#define WIDTH       8
-#define HEIGHT      8
-#define BOUSTROPHEDON false
+#define NUM_LEDS    80
+#define WIDTH       4
+#define HEIGHT      20
+#define BOUSTROPHEDON true
 
 #define CUR 0 // index to current buffer
 #define PREV 1 // index to previous buffer
@@ -17,8 +17,8 @@
 //#define BUTTON2_PIN 6
 #define BUTTON_POWER DAC
 
-#define BRIGHTNESS         96
-#define FRAMES_PER_SECOND  120
+#define BRIGHTNESS         64
+#define FRAMES_PER_SECOND  80
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
