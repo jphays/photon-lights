@@ -77,6 +77,24 @@ CRGBPalette16 getEvenPalette(CRGB c0, CRGB c1, CRGB c2, CRGB c3)
         c3, blend(c3, c0, p1), blend(c3, c0, p2), blend(c3, c0, p3));
 }
 
+CRGBPalette16 getEvenPaletteR()
+{
+    return getEvenPalette(
+      CHSV(random8(), 255, 255),
+      CHSV(random8(), 255, 255),
+      CHSV(random8(), 255, 255),
+      CHSV(random8(), 255, 255));
+}
+
+CRGBPalette16 getQuadPalette()
+{
+    return CRGBPalette16(
+      CHSV(random8(), 255, 255),
+      CHSV(random8(), 255, 255),
+      CHSV(random8(), 255, 255),
+      CHSV(random8(), 255, 255));
+}
+
 CRGBPalette16 getCWCBPalette()
 {
     return getEvenPalette(
