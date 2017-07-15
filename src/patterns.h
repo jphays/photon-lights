@@ -278,7 +278,7 @@ void column(CRGB* pixels, CRGB color, uint8_t column)
 
 void descent(CRGB* pixels, unsigned long frame)
 {
-    for (uint8_t r = 0; r < HEIGHT; r++)
+    for (uint8_t r = 0; r < FACES * HEIGHT; r++)
     {
         row(pixels, ColorFromPalette(gCurrentPalette, gIndex + pow(r + 1, 2)), r);
     }
@@ -303,7 +303,7 @@ void hatchflash(CRGB* pixels, unsigned long frame)
         uint8_t row = random8(HEIGHT);
         uint8_t col = random8(WIDTH);
 
-        for (uint8_t r = 0; r < HEIGHT; r++)
+        for (uint8_t r = 0; r < (direction == 1 ? WIDTH : HEIGHT); r++)
         {
             pixels[direction == 1 ? XY(r, row) : XY(col, r)] += ColorFromPalette(gCurrentPalette, gIndex + direction * 128);
         }
@@ -355,7 +355,7 @@ void scanner(CRGB* pixels, unsigned long frame)
 
 // cube code -------------------------------------------------------------------
 
-uint8_t faceOffset(uint8_t face) { return face * WIDTH * WIDTH; }
+uint8_t faceOffset(uint8_t face) { return face * WIDTH * HEIGHT; }
 uint16_t cubeXY(uint8_t face, uint8_t x, uint8_t y)
 {
     return faceOffset(face) + XY(x, y);
@@ -364,11 +364,11 @@ uint16_t cubeXY(uint8_t face, uint8_t x, uint8_t y)
 void cube1(CRGB* pixels, unsigned long frame)
 {
 
-    for (uint8_t face = 0; face < 5; face++)
+    for (uint8_t face = 0; face < FACES; face++)
     {
-        for (uint8_t x = 0; x < 4; x++)
+        for (uint8_t x = 0; x < WIDTH; x++)
         {
-            for (uint8_t y = 0; y < 4; y++)
+            for (uint8_t y = 0; y < HEIGHT; y++)
             {
                 pixels[cubeXY(face, x, y)] = ColorFromPalette(gCurrentPalette, gIndex + face * 48);
             }
@@ -380,11 +380,11 @@ void cube1(CRGB* pixels, unsigned long frame)
 void cube2(CRGB* pixels, unsigned long frame)
 {
 
-    for (uint8_t face = 0; face < 5; face++)
+    for (uint8_t face = 0; face < FACES; face++)
     {
-        for (uint8_t x = 0; x < 4; x++)
+        for (uint8_t x = 0; x < WIDTH; x++)
         {
-            for (uint8_t y = 0; y < 4; y++)
+            for (uint8_t y = 0; y < HEIGHT; y++)
             {
                 pixels[cubeXY(face, x, y)] = ColorFromPalette(gCurrentPalette, gIndex + face * 48);
                 if ((x == 1 || x == 2) && (y == 1 || y == 2))
@@ -399,6 +399,27 @@ void cube2(CRGB* pixels, unsigned long frame)
         }
     }
 
+}
+
+void hatchflashCube(CRGB* pixels, unsigned long frame)
+{
+    fadeToBlackBy(pixels, NUM_LEDS, beatsin8(8, 3, 8));
+
+    if (random8(100) < beatsin8(10, 70, 90))
+    {
+        uint8_t direction = random8(2);
+        uint8_t row = random8(HEIGHT);
+        uint8_t col = random8(WIDTH);
+        uint8_t face = random8(FACES);
+
+        for (uint8_t r = 0; r < (direction == 1 ? WIDTH : HEIGHT); r++)
+        {
+            pixels[direction == 1 ? cubeXY(face, r, row) : cubeXY(face, col, r)] += ColorFromPalette(gCurrentPalette, gIndex + face * 32);
+        }
+
+        // if (random8(2) == 1) row(pixels, ColorFromPalette(gCurrentPalette, gIndex), random8(HEIGHT));
+        // else column(pixels,ColorFromPalette(gCurrentPalette, gIndex + 128), random8(WIDTH));
+    }
 }
 
 #endif

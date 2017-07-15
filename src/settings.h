@@ -5,9 +5,10 @@
 #define CLOCK_PIN   5
 #define LED_TYPE    APA102
 #define COLOR_ORDER EOrder::BGR
-#define NUM_LEDS    80
+#define NUM_LEDS    96
 #define WIDTH       4
-#define HEIGHT      20
+#define HEIGHT      4
+#define FACES       6
 #define BOUSTROPHEDON true
 
 #define CUR 0 // index to current buffer

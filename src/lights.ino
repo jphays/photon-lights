@@ -43,6 +43,7 @@ SimplePattern gPatterns[] = {
     descent,
     //mirror,
     //hatchflash,
+    hatchflashCube,
     //fade,
     //scanner,
     cube1,
